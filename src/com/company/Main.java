@@ -3,7 +3,6 @@ package com.company;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Main {
 
@@ -38,7 +37,7 @@ public class Main {
 
     private static void testList(List<Product> testList) {
         System.out.println(testList);
-        List<Product> sortedList = sortList(testList);
+        List<Product> sortedList = new Sorter().sortList(testList);
         System.out.println(sortedList);
         boolean hasAtLeastOfEach = sortedList.stream().filter(Product::packageMatches).count() >= 3 && sortedList.stream()
                                                                                                                  .filter(Main::packageDoesNotMatch)
@@ -75,6 +74,9 @@ public class Main {
         return list;
     }
 
+    private static final int minimumPackageMatch = 3;
+    private static final int minimumPackageDoesNotMatch = 3;
+
     private static List<Product> createShuffledListWithLessThanLimitButMatchingCriteria() {
         List<Product> list = new ArrayList<>();
         list.addAll(createProductsWithMatching(minimumPackageMatch, false));
@@ -82,126 +84,12 @@ public class Main {
         Collections.shuffle(list);
         return list;
     }
-
     private static List<Product> createShuffledListWithTooLessProductsMatchingCriteria() {
         List<Product> list = new ArrayList<>();
         list.addAll(createProductsWithMatching(minimumPackageMatch - 1, false));
         list.addAll(createProductsWithMatching(minimumPackageDoesNotMatch - 1, true));
         Collections.shuffle(list);
         return list;
-    }
-
-    private static final int limitTotal = 10;
-    private static final int minimumPackageMatch = 3;
-    private static final int minimumPackageDoesNotMatch = 3;
-
-    private static List<Product> sortList(List<Product> list) {
-        List<Product> sortedLimitedList =
-                list.stream().limit(limitTotal).collect(Collectors.toList());
-
-        boolean packageMatchesMinimumReached = sortedLimitedList.stream()
-                                                                .filter(Product::packageMatches)
-                                                                .count() > minimumPackageMatch;
-        boolean packageDoesNotMatchesMinimumReached = sortedLimitedList.stream()
-                                                                       .filter(Main::packageDoesNotMatch)
-                                                                       .count() > minimumPackageDoesNotMatch;
-        if (packageMatchesMinimumReached && packageDoesNotMatchesMinimumReached) {
-            return sortedLimitedList;
-        } else if (packageMatchesMinimumReached) {
-            // find next package do not match
-
-            // how much not matching to add?
-            int numberNotMatchingToAdd =
-                    minimumPackageDoesNotMatch - (int)sortedLimitedList.stream()
-                                                                       .filter(Main::packageDoesNotMatch)
-                                                                       .count();
-            final List<Product> notMatchingToAdd;
-            if (numberNotMatchingToAdd == minimumPackageDoesNotMatch) {
-                // which not matching to add?
-                notMatchingToAdd = list.stream()
-                                       .filter(Main::packageDoesNotMatch)
-                                       .limit(minimumPackageDoesNotMatch)
-                                       .collect(Collectors.toList());
-
-
-            } else {
-                // which not matching to add?
-                notMatchingToAdd = list.stream()
-                                       .filter(Main::packageDoesNotMatch)
-                                       .filter(element -> !sortedLimitedList.contains(element))
-                                       .limit(numberNotMatchingToAdd)
-                                       .collect(Collectors.toList());
-            }
-
-            // add next not matching
-            sortedLimitedList.addAll(notMatchingToAdd);
-
-            System.out.println(sortedLimitedList);
-
-            // remove too much matching
-            deleteTooMuchMatching(sortedLimitedList);
-        } else if (packageDoesNotMatchesMinimumReached) {
-            // find next package that matches
-
-            // how much matching to add?
-            int numberMatchingToAdd =
-                    minimumPackageMatch - (int)sortedLimitedList.stream()
-                                                                .filter(Product::packageMatches)
-                                                                .count();
-            final List<Product> matchingToAdd;
-            if (numberMatchingToAdd == minimumPackageMatch) {
-                // which matching to add?
-                matchingToAdd = list.stream()
-                                    .filter(Product::packageMatches)
-                                    .limit(minimumPackageMatch)
-                                    .collect(Collectors.toList());
-
-
-            } else {
-                // which matching to add?
-                matchingToAdd = list.stream()
-                                    .filter(Product::packageMatches)
-                                    .filter(element -> !sortedLimitedList.contains(element))
-                                    .limit(numberMatchingToAdd)
-                                    .collect(Collectors.toList());
-            }
-
-            // add next matchings
-            sortedLimitedList.addAll(matchingToAdd);
-
-            System.out.println(sortedLimitedList);
-
-            // remove too much not matching
-            deleteTooMuchNotMatching(sortedLimitedList);
-        } else {
-            return sortedLimitedList;
-        }
-
-        return sortedLimitedList;
-    }
-
-    private static void deleteTooMuchMatching(List<Product> sortedLimitedList) {
-        int indexOfNextMatchingToDelete = sortedLimitedList.size() - 1;
-        while (sortedLimitedList.size() > limitTotal) {
-            Product element = sortedLimitedList.get(indexOfNextMatchingToDelete);
-            if (packageDoesNotMatch(element)) {
-                indexOfNextMatchingToDelete--;
-            } else {
-                sortedLimitedList.remove(indexOfNextMatchingToDelete);
-            }
-        }
-    }
-
-    private static void deleteTooMuchNotMatching(List<Product> sortedLimitedList) {
-        int indexOfNextNotMatchingToDelete = sortedLimitedList.size() - 1;
-        while (sortedLimitedList.size() > limitTotal) {
-            Product element = sortedLimitedList.get(indexOfNextNotMatchingToDelete);
-            if (element.packageMatches()) {
-                indexOfNextNotMatchingToDelete--;
-            } else {
-                sortedLimitedList.remove(indexOfNextNotMatchingToDelete);
-            }
-        }
     }
 
     private static boolean packageDoesNotMatch(Product value) {
